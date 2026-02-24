@@ -1,0 +1,26 @@
+name: pdf_pin_app
+description: PDF annotation app - Pin & Sticky Note
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  syncfusion_flutter_pdfviewer: ^32.2.5
+  syncfusion_flutter_pdf: ^32.2.5
+  file_picker: ^8.0.3
+  path_provider: ^2.1.2
+  flutter_screenutil: ^5.9.0
+  file_save_directory: ^1.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

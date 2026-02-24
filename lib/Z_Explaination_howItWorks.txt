@@ -1,0 +1,92 @@
+============= Step 1 — App Launch & PDF Load ===========
+User opens app → picks a PDF file
+         ↓
+PdfEditorScreen receives pdfPath
+         ↓
+initState() → _loadPdfBytes()
+         ↓
+File(pdfPath).readAsBytes() → reads PDF into Uint8List _pdfBytes
+         ↓
+SfPdfViewer.memory(_pdfBytes) renders the PDF on screen
+
+============ Step 2 — Enter Pin Mode ============
+User taps 📍 Pin button in toolbar
+         ↓
+_togglePin() called
+         ↓
+_isPinMode = true
+         ↓
+AppBar subtitle changes to "📍 Tap on the PDF to place a pin"
+Toolbar pin button glows with selected color
+
+============== Step 3 — Place a Pin ==============
+User taps anywhere on the PDF
+         ↓
+SfPdfViewer.onTap fires → _onViewerTap(PdfGestureDetails details)
+         ↓
+details gives us 3 things:
+  ├── details.pageNumber  → which page was tapped (e.g. page 1)
+  ├── details.pagePosition → exact X,Y in PDF coordinates (for saving)
+  └── details.position    → X,Y on screen (for live preview overlay)
+         ↓
+_PinData object created and added to _pins list
+         ↓
+setState() triggers rebuild
+         ↓
+Flutter Icon(Icons.location_on) appears on screen at tap position ← live preview
+HapticFeedback fires
+Snackbar shows "📍 Pin placed! Tap Save to embed it."
+
+============ Step 4 — Save & Burn Pin into PDF =============
+User taps Save button
+         ↓
+_savePdf() called
+         ↓
+PdfDocument(inputBytes: _pdfBytes) ← opens PDF for editing
+         ↓
+Loop through every pin in _pins list:
+  ├── Get correct page → document.pages[pin.page - 1]
+  └── _drawPinOnPage(x: pin.pdfX, y: pin.pdfY, color: pin.color)
+            ↓
+      PdfGraphics draws directly on the page:
+        1. Circle (pin head) with selected color
+        2. White highlight dot inside circle
+        3. Triangle pointing down (pin tail)
+        4. Dark dot at the tip
+         ↓
+document.saveSync() → exports final Uint8List with pins burned in
+document.dispose()
+
+=========== Step 5 — File Saved to Device ============
+annotatedBytes ready
+         ↓
+FileSaveDirectory.saveFile() → saves to public Downloads folder
+         ↓
+File(privatePath).writeAsBytes() → saves private copy for reliable open
+         ↓
+_pdfBytes = annotatedBytes  ← viewer updates with new burned-in version
+_pins.clear()               ← overlays removed (now part of PDF)
+_isPinMode = false
+         ↓
+OpenFileAndroid().open(privatePath) → PDF opens in device's PDF viewer
+         ↓
+✅ User sees the saved PDF with 📍 pins permanently embedded
+Snackbar shows "Saved to Downloads!"
+
+============ Full Visual Summary ==================
+Pick PDF → Load bytes → View PDF
+                              ↓
+                        Tap Pin button
+                              ↓
+                        Tap on PDF → preview overlay appears
+                              ↓
+                        (optional) change color / undo
+                              ↓
+                        Tap Save
+                              ↓
+                   Draw pin shapes onto PDF pages
+                              ↓
+                   Save to Downloads folder
+                              ↓
+                   PDF opens automatically ✅
+The key insight is that there are two coordinate systems working together — screenX/Y for the live Flutter overlay you see while editing, and pdfX/Y for the actual vector shape burned into the PDF file permanently.
